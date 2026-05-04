@@ -14,25 +14,41 @@ def chat_with_pdf(question: str):
 
     # extragem fragmentele relevante
     documents = results["documents"][0] if results["documents"] else []
-    context = "\n".join(documents)
+    distances = results["distances"][0] if "distances" in results else []
 
-    # construim promptul modelului
+    # filtrare context: pastram doar fragmente cu distanta < 1.0
+    filtered = [
+        doc for doc, dist in zip(documents, distances)
+        if dist < 1.0
+    ]
+
+    # fallback: daca filtrarea elimina tot, folosim totusi primele fragmente
+    if not filtered:
+        filtered = documents
+
+    context = "\n".join(filtered)
+
+    # prompt imbunatatit
     prompt = f"""
-    You are an assistant that helps answer questions based on the following context from the PDF document:
+    You are an assistant that answers questions ONLY using the context extracted from a PDF.
 
-    PDF Context:
+    CONTEXT FROM PDF:
     {context}
 
-    Question: {question}
+    QUESTION:
+    {question}
 
-    If the answer is not in the context of the PDF, say: "The PDF does not contain the answer to this question."
+    RULES:
+    - If the answer is not in the context, say exactly:
+      "The PDF does not contain the answer to this question."
+    - Do NOT invent information.
+    - Base your answer strictly on the provided context.
     """
 
     # trimitem promptul la Groq
     response = client.chat.completions.create(
-    model="llama-3.1-8b-instant",
-    messages=[{"role": "user", "content": prompt}]
+        model="llama-3.1-8b-instant",
+        messages=[{"role": "user", "content": prompt}]
     )
-
 
     return response.choices[0].message.content.strip()
