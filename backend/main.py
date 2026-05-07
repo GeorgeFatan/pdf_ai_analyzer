@@ -3,9 +3,22 @@ from pypdf import PdfReader
 from database import add_pdf_to_db, query_text
 from chat import chat_with_pdf
 from fastapi import Body
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 app = FastAPI()
+
+
+# CORS — permite frontend-ului (5173) sa comunice (8000)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -41,7 +54,11 @@ def search(query: str = Query(...)):
     results = query_text(query)
     return results
 
+class ChatRequest(BaseModel):
+    question: str
+    history: list | None = None
+
 @app.post("/chat/")
-def chat(question: str = Body(..., embed=True)):
-    answer = chat_with_pdf(question)
+def chat(chat_request: ChatRequest):
+    answer = chat_with_pdf(chat_request.question, chat_request.history)
     return {"answer": answer}

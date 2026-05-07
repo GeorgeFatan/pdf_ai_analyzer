@@ -1,0 +1,40 @@
+.app-container {
+    width: 600px;
+    margin: 40px auto;
+    font-family: Arial, sans-serif;
+}
+
+.chat-container{
+    border: 1px solid #ccc;
+    padding: 15px;
+    height: auto;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.msg{
+    margin-bottom: 10px;;
+}
+
+.msg-user{
+    color: rgb(67, 196, 240);
+}
+
+.msg-assistant{
+    color: rgb(11, 156, 120)
+}
+
+.input-row{
+    display: flex;
+    gap: 10px;
+}
+
+input{
+    flex: 1;
+    padding: 10px;
+}
+
+button{
+    padding: 10px 20px;
+    cursor: pointer;
+}

@@ -1,0 +1,26 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    font-family: Arial, sans-serif;
+    background: #8fe8ee;
+    color: #222;
+} /* stil global pentru a seta fontul
+si culoarea de fundal a paginii */
+
+/* adaugam un scrollbar  */
+::-webkit-scrollbar{
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb{
+    background: #ccc;
+    border-radius: 4px;
+}
+
+
+
+
