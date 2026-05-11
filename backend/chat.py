@@ -8,12 +8,12 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-def chat_with_pdf(question: str, history: list = None):
+def chat_with_pdf(question: str, history: list = None, pdf_name: str | None = None):
     if history is None:
         history = []
 
     # cautam context in baza de date
-    results = query_text(question)
+    results = query_text(question, pdf_name)
 
     documents = results["documents"][0] if results["documents"] else []
     distances = results["distances"][0] if "distances" in results else []
@@ -35,22 +35,31 @@ def chat_with_pdf(question: str, history: list = None):
 
     # prompt imbunatatit cu istoric
     prompt = f"""
-    You are an assistant that answers questions ONLY using the context extracted from a PDF.
+    You are an AI assistant that answers questions using ONLY the information found in the provided PDF context.
 
-    CONVERSATION HISTORY:
-    {history_text}
+Your goals:
+- Give clear, natural, human‑like explanations.
+- Sound conversational, not robotic.
+- Base every part of your answer strictly on the context.
+- If the context does not contain the answer, say exactly:
+  "The PDF does not contain the answer to this question."
 
-    CONTEXT FROM PDF:
-    {context}
+ACTIVE PDF: {pdf_name}
 
-    QUESTION:
-    {question}
+CONVERSATION HISTORY:
+{history_text}
 
-    RULES:
-    - If the answer is not in the context, say exactly:
-      "The PDF does not contain the answer to this question."
-    - Do NOT invent information.
-    - Base your answer strictly on the provided context.
+PDF CONTEXT:
+{context}
+
+QUESTION:
+{question}
+
+Guidelines:
+- Do NOT invent or guess information.
+- Do NOT add details that are not explicitly present in the context.
+- If the context is unclear or incomplete, acknowledge that.
+- Keep the tone friendly, natural, and easy to read.
     """
 
     response = client.chat.completions.create(

@@ -57,8 +57,39 @@ def search(query: str = Query(...)):
 class ChatRequest(BaseModel):
     question: str
     history: list | None = None
+    pdf_name: str | None = None
 
 @app.post("/chat/")
 def chat(chat_request: ChatRequest):
-    answer = chat_with_pdf(chat_request.question, chat_request.history)
+    answer = chat_with_pdf(chat_request.question, chat_request.history, chat_request.pdf_name)
     return {"answer": answer}
+
+
+# new endpoint to add list of pdfs
+@app.get("/list-pdfs/")
+def list_pdfs():
+    files = os.listdir("uploads") # fisierele din uploads
+    pdfs = [f for f in files if f.lower().endswith(".pdf")] # only pdfs extensions
+    return {"pdfs": pdfs}
+
+class DeleteRequest(BaseModel):
+    pdfs: list[str]
+
+@app.post("/delete-pdfs/")
+def delete_pdfs(req: DeleteRequest):
+    deleted = []
+
+    for pdf in req.pdfs:
+        file_path = os.path.join("uploads", pdf)
+        
+        # stergem fisierul fizic din uploads
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # stergem din baza de date ChromaDB
+        from database import delete_pdf_from_db
+        delete_pdf_from_db(pdf)
+
+        deleted.append(pdf)
+        
+    return {"deleted": deleted}

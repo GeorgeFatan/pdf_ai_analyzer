@@ -39,12 +39,26 @@ def add_pdf_to_db(filename: str, text: str):
 
 
 # QUERY FUNCTION
-def query_text(query: str):
-    embedding = model.encode(query)
-
-    results = collection.query(
-        query_embeddings=[embedding],
-        n_results=5
-    )
+def query_text(query: str, pdf_name: str | None = None):
+    if pdf_name:
+        results = collection.query(
+            query_texts=[query],
+            where={"filename": pdf_name},
+            n_results=5
+        )
+    else:
+        results = collection.query(
+            query_texts=[query],
+            n_results=5
+        )
 
     return results
+
+
+# DELETE PDF FROM DATABASE
+def delete_pdf_from_db(pdf_name: str):
+    # gasim toate id-urile asociate cu documentul respectiv
+    results = collection.get(where={"filename": pdf_name})
+
+    if "ids" in results and results["ids"]:
+        collection.delete(ids=results["ids"])

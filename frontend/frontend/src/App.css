@@ -38,3 +38,29 @@ button{
     padding: 10px 20px;
     cursor: pointer;
 }
+
+.pdf-item{
+    cursor: pointer;
+    padding: 6px 10px;
+    margin: 4px 0;
+    border-radius: 4px;
+    transition: 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pdf-item:hover{
+    background-color: #007bff;
+}
+
+.pdf-item.selected{
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+.pdf-item.marked-delete{
+    background-color: #dc3545;
+    border-left: 4px solid red;
+}

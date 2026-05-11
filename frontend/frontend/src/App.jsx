@@ -1,43 +1,62 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
+  const [pdfList, setPdfList] = useState([]);
+  const [activePdf, setActivePdf] = useState(null);
 
+  // delete mode
+  const [selectedForDelete, setSelectedForDelete] = useState([]);
+  const [deleteMode, setDeleteMode] = useState(false);
 
-// file upload function
-  const handleFileUpload = async (e) =>{
-    const file = e.target.files[0]; 
-    if(!file) return;
+  // upload file
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    const formData = new FormData(); // form data pentru upload
-    formData.append("file", file); // adauga fisierul in form data
+    const formData = new FormData();
+    formData.append("file", file);
 
     try {
       const response = await fetch("http://127.0.0.1:8000/upload-pdf/", {
         method: "POST",
-        body: formData
+        body: formData,
       });
 
       const data = await response.json();
-      console.log("File uploaded is: ", data);
+      console.log("File uploaded:", data);
 
-      setMessages(prev => [...prev, {role: "system", content: `File ${data.filename}" uploaded successfully!`
-      }]);
-    } catch (error){
-      console.error("error uploading file: ",error);
+      setMessages((prev) => [
+        ...prev,
+        { role: "system", content: `File "${data.filename}" uploaded successfully!` },
+      ]);
+
+      fetchPdfList();
+    } catch (error) {
+      console.error("Upload error:", error);
     }
   };
 
-  // submit chat function
+  // fetch pdf list
+  const fetchPdfList = async () => {
+    const res = await fetch("http://127.0.0.1:8000/list-pdfs/");
+    const data = await res.json();
+    setPdfList(data.pdfs);
+  };
+
+  useEffect(() => {
+    fetchPdfList();
+  }, []);
+
+  // chat submit
   const handleSubmit = async () => {
     if (!question.trim()) return;
 
     const userQuestion = question;
 
-    // msg userului
-    setMessages(prev => [...prev, { role: "user", content: userQuestion }]);
+    setMessages((prev) => [...prev, { role: "user", content: userQuestion }]);
     setQuestion("");
 
     try {
@@ -46,17 +65,53 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: userQuestion,
-          history: messages
-        })
+          history: messages,
+          pdf_name: activePdf,
+        }),
       });
 
       const data = await response.json();
 
-      // rsp AI in UI
-      setMessages(prev => [...prev, { role: "assistant", content: data.answer }]);
-
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.answer },
+      ]);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Chat error:", error);
+    }
+  };
+
+  // activate PDF
+  const activatePdf = (pdf) => {
+    if (!deleteMode) {
+      setActivePdf(pdf);
+    } else {
+      toggleSelectForDelete(pdf);
+    }
+  };
+
+  // select PDFs for delete
+  const toggleSelectForDelete = (pdf) => {
+    if (selectedForDelete.includes(pdf)) {
+      setSelectedForDelete((prev) => prev.filter((p) => p !== pdf));
+    } else {
+      setSelectedForDelete((prev) => [...prev, pdf]);
+    }
+  };
+
+  // confirm delete
+  const handleDelete = async () => {
+    await fetch("http://127.0.0.1:8000/delete-pdfs/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pdfs: selectedForDelete }),
+    });
+
+    fetchPdfList();
+    setSelectedForDelete([]);
+    setDeleteMode(false);
+    if (selectedForDelete.includes(activePdf)) {
+      setActivePdf(null);
     }
   };
 
@@ -83,10 +138,49 @@ function App() {
         />
         <button onClick={handleSubmit}>Send</button>
       </div>
+
+      <div className="pdf-list">
+        <h3>Loaded Documents</h3>
+
+        <button onClick={() => setDeleteMode(!deleteMode)}>
+          {deleteMode ? "Cancel Delete" : "Delete Documents"}
+        </button>
+
+        {deleteMode && selectedForDelete.length > 0 && (
+          <button
+            style={{
+              background: "red",
+              color: "white",
+              marginLeft: "10px",
+              padding: "5px 10px",
+            }}
+            onClick={handleDelete}
+          >
+            Confirm Delete ({selectedForDelete.length})
+          </button>
+        )}
+
+        {pdfList.map((pdf, i) => (
+          <div
+            key={i}
+            className={`pdf-item ${
+              activePdf === pdf ? "selected" : ""
+            } ${selectedForDelete.includes(pdf) ? "marked-delete" : ""}`}
+            onClick={() => activatePdf(pdf)}
+          >
+            {deleteMode && (
+              <input
+                type="checkbox"
+                checked={selectedForDelete.includes(pdf)}
+                readOnly
+              />
+            )}
+            {pdf}
+          </div>
+        ))}
+      </div>
     </div>
   );
-
-
 }
 
 export default App;
